@@ -1,0 +1,41 @@
+PASS=40 FAIL=0 TOTAL=40
+PASS	Executive briefing occupancy
+PASS	Exactly 3 critical maintenance >48h
+PASS	Exactly 4 investor updates due
+PASS	Overdue receivables total
+PASS	CedarStone Park delay surfaced
+PASS	Investor INV-003 exists
+PASS	Available units returned
+PASS	High-value stale leads returned
+PASS	Offline CEO briefing
+PASS	Offline occupancy
+PASS	Offline maintenance IDs
+PASS	Offline construction
+PASS	Offline investor
+PASS	Role/employee mismatch rejected
+PASS	Unknown role rejected
+PASS	Sales denied finance receivables
+PASS	Facilities denied investor summary
+PASS	Construction denied shortlet bookings
+PASS	Shortlet denied receivables
+PASS	Investor relations allowed investor summary
+PASS	Finance allowed receivables
+PASS	Admin executive-style read access
+PASS	Sales executive get_leads scoped to own leads
+PASS	Sales executive can update own lead
+PASS	Sales executive cannot update another rep's lead
+PASS	Sales can create task in own department
+PASS	Sales cannot create cross-department task
+PASS	Mismatched department and assignee rejected
+PASS	Executive can create valid cross-department task
+PASS	Facilities can create maintenance ticket
+PASS	Sales cannot create maintenance ticket
+PASS	Wrong property/unit pairing rejected
+PASS	Bad vendor rejected
+PASS	Draft message body persists
+PASS	Sales cannot draft to investor
+PASS	Invalid recipient ID rejected
+PASS	Blank draft rejected
+PASS	Write actions generate audit records
+PASS	Generic search skips unauthorized domain
+PASS	Core master row counts stable

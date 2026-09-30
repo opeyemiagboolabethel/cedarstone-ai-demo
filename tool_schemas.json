@@ -1,0 +1,62 @@
+[
+  {
+    "name": "search_company_data",
+    "description": "Search approved CedarStone operational domains for a term or ID.",
+    "parameters": {"type":"object","properties":{"query":{"type":"string"},"domains":{"type":"array","items":{"type":"string"}},"limit":{"type":"integer","default":20}},"required":["query"]}
+  },
+  {
+    "name": "get_property_availability",
+    "description": "Find available property units, optionally filtered by property, type, or price.",
+    "parameters": {"type":"object","properties":{"property_id":{"type":"string"},"unit_type":{"type":"string"},"max_price_ngn":{"type":"number"}}}
+  },
+  {
+    "name": "get_leads",
+    "description": "Search and analyse sales leads, including stale and high-value leads.",
+    "parameters": {"type":"object","properties":{"status":{"type":"string"},"stale_days":{"type":"integer"},"min_score":{"type":"integer"},"min_budget_ngn":{"type":"number"},"assigned_employee_id":{"type":"string"}}}
+  },
+  {
+    "name": "update_lead_status",
+    "description": "Update a lead status and create an audit/lead-activity record.",
+    "parameters": {"type":"object","properties":{"lead_id":{"type":"string"},"new_status":{"type":"string"},"note":{"type":"string"},"commit":{"type":"boolean","default":true}},"required":["lead_id","new_status"]}
+  },
+  {
+    "name": "create_task",
+    "description": "Create an internal CedarStone task with assignee, due date and priority.",
+    "parameters": {"type":"object","properties":{"department_id":{"type":"string"},"assigned_employee_id":{"type":"string"},"description":{"type":"string"},"due_date":{"type":"string"},"priority":{"type":"string"},"commit":{"type":"boolean","default":true}},"required":["department_id","assigned_employee_id","description","due_date"]}
+  },
+  {
+    "name": "create_maintenance_ticket",
+    "description": "Log a new facilities/maintenance issue for a property unit.",
+    "parameters": {"type":"object","properties":{"property_id":{"type":"string"},"unit_id":{"type":"string"},"issue_type":{"type":"string"},"description":{"type":"string"},"priority":{"type":"string"},"assigned_vendor_id":{"type":"string"},"commit":{"type":"boolean","default":true}},"required":["property_id","unit_id","issue_type","description"]}
+  },
+  {
+    "name": "get_shortlet_bookings",
+    "description": "Return shortlet bookings, occupancy and booking value for a date range.",
+    "parameters": {"type":"object","properties":{"start_date":{"type":"string"},"end_date":{"type":"string"},"property_id":{"type":"string"}},"required":["start_date","end_date"]}
+  },
+  {
+    "name": "get_investor_summary",
+    "description": "Return an investor profile and connected property investments.",
+    "parameters": {"type":"object","properties":{"investor_id":{"type":"string"}},"required":["investor_id"]}
+  },
+  {
+    "name": "get_outstanding_payments",
+    "description": "Analyse outstanding or overdue customer property-payment plans.",
+    "parameters": {"type":"object","properties":{"min_amount_ngn":{"type":"number","default":0},"overdue_only":{"type":"boolean","default":true}}}
+  },
+  {
+    "name": "get_construction_status",
+    "description": "Return project and milestone status, including construction delays.",
+    "parameters": {"type":"object","properties":{"project_id":{"type":"string"},"delayed_only":{"type":"boolean","default":false}}}
+  },
+  {
+    "name": "generate_management_briefing",
+    "description": "Produce a cross-department executive management briefing from live demo records.",
+    "parameters": {"type":"object","properties":{}}
+  },
+  {
+    "name": "draft_communication",
+    "description": "Create a draft-only communication; never sends messages automatically.",
+    "parameters": {"type":"object","properties":{"entity_type":{"type":"string"},"entity_id":{"type":"string"},"channel":{"type":"string"},"subject":{"type":"string"},"message":{"type":"string"},"commit":{"type":"boolean","default":true}},"required":["entity_type","entity_id","channel","subject","message"]}
+  }
+]
