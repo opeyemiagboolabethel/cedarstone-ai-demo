@@ -43,16 +43,96 @@ def build_tool_functions(tools: CedarStoneTools) -> List[Callable[..., Dict[str,
     def update_lead_status(lead_id: str, new_status: str, note: str = "Updated by CedarStone AI demo") -> dict:
         return _safe(tools.update_lead_status, lead_id=lead_id, new_status=new_status, note=note, commit=True)
 
-    def create_task(department_id: str, assigned_employee_id: str, description: str, due_date: str, priority: str = "Medium") -> dict:
-        return _safe(
+    def _resolve_department_id(value: str) -> str:
+        raw = (value or "").strip()
+        with tools._conn() as con:
+            row = con.execute(
+                "SELECT department_id FROM departments WHERE department_id=?",
+                (raw,),
+            ).fetchone()
+            if row:
+                return str(row["department_id"])
+            row = con.execute(
+                "SELECT department_id FROM departments WHERE lower(department_name) LIKE ? ORDER BY department_id LIMIT 1",
+                (f"%{raw.lower()}%",),
+            ).fetchone()
+            if row:
+                return str(row["department_id"])
+        return raw
+
+    def _resolve_task_assignee(department_id: str, requested_employee_id: str = "") -> Dict[str, str]:
+        with tools._conn() as con:
+            if requested_employee_id:
+                row = con.execute(
+                    """
+                    SELECT employee_id,full_name,role
+                    FROM employees
+                    WHERE employee_id=? AND department_id=? AND status='Active'
+                    """,
+                    (requested_employee_id, department_id),
+                ).fetchone()
+                if row:
+                    return dict(row)
+
+            row = con.execute(
+                """
+                SELECT employee_id,full_name,role
+                FROM employees
+                WHERE department_id=? AND status='Active'
+                ORDER BY
+                    CASE
+                        WHEN lower(role) LIKE '%head%' THEN 0
+                        WHEN lower(role) LIKE '%manager%' THEN 1
+                        WHEN lower(role) LIKE '%lead%' THEN 2
+                        ELSE 3
+                    END,
+                    employee_id
+                LIMIT 1
+                """,
+                (department_id,),
+            ).fetchone()
+            return dict(row) if row else {}
+
+    def create_task(
+        department_id: str,
+        description: str,
+        due_date: str,
+        priority: str = "Medium",
+        assigned_employee_id: str = "",
+    ) -> dict:
+        resolved_department = _resolve_department_id(department_id)
+        assignee = _resolve_task_assignee(resolved_department, assigned_employee_id)
+        if not assignee:
+            return {
+                "ok": False,
+                "error": f"No active employee is available for department {resolved_department}.",
+            }
+
+        result = _safe(
             tools.create_task,
-            department_id=department_id,
-            assigned_employee_id=assigned_employee_id,
+            department_id=resolved_department,
+            assigned_employee_id=assignee["employee_id"],
             description=description,
             due_date=due_date,
             priority=priority,
             commit=True,
         )
+        if result.get("ok") and isinstance(result.get("data"), dict):
+            with tools._conn() as con:
+                dept = con.execute(
+                    "SELECT department_name FROM departments WHERE department_id=?",
+                    (resolved_department,),
+                ).fetchone()
+            result["data"]["department_name"] = (
+                str(dept["department_name"]) if dept else resolved_department
+            )
+            result["data"]["assigned_employee_name"] = assignee.get("full_name", "")
+            result["data"]["assigned_employee_role"] = assignee.get("role", "")
+            result["data"]["assignee_auto_selected"] = (
+                not assigned_employee_id
+                or assigned_employee_id != assignee.get("employee_id")
+            )
+        return result
 
     def create_maintenance_ticket(property_id: str, unit_id: str, issue_type: str, description: str, priority: str = "Medium", assigned_vendor_id: str = "") -> dict:
         return _safe(
@@ -165,7 +245,7 @@ def build_tool_declarations(types):
         ),
         fn(
             "create_task",
-            "Create a simulated internal CedarStone task. Use only on explicit user instruction. The assigned employee must belong to the selected department.",
+            "Create a simulated internal CedarStone task on explicit user instruction. Department IDs: Executive DEPT-001, Sales DEPT-002, Shortlets DEPT-004, Facilities DEPT-005, Construction & Development DEPT-006, Finance DEPT-007, Investor Relations DEPT-008, Administration DEPT-009. assigned_employee_id is optional; if omitted or invalid for that department, the backend safely selects an active employee in the department.",
             {
                 "department_id": {"type": "string"},
                 "assigned_employee_id": {"type": "string"},
@@ -173,7 +253,7 @@ def build_tool_declarations(types):
                 "due_date": {"type": "string", "description": "ISO date YYYY-MM-DD"},
                 "priority": {"type": "string", "enum": ["Low", "Medium", "High"]},
             },
-            ["department_id", "assigned_employee_id", "description", "due_date"],
+            ["department_id", "description", "due_date"],
         ),
         fn(
             "create_maintenance_ticket",
@@ -288,6 +368,13 @@ class GeminiProvider:
             config=self._config(),
         )
 
+        write_tools = {
+            "update_lead_status",
+            "create_task",
+            "create_maintenance_ticket",
+            "draft_communication",
+        }
+
         for _ in range(8):
             calls = list(response.function_calls or [])
             if not calls:
@@ -304,13 +391,67 @@ class GeminiProvider:
 
                 if fn is None:
                     function_response = {"error": f"Unknown CedarStone tool: {name}"}
+                    result = {"ok": False, "error": function_response["error"]}
                 else:
                     try:
                         result = fn(**args)
                         function_response = {"result": result}
                     except Exception as exc:
-                        function_response = {
-                            "error": f"Tool execution failed: {type(exc).__name__}: {exc}"
+                        result = {
+                            "ok": False,
+                            "error": f"Tool execution failed: {type(exc).__name__}: {exc}",
+                        }
+                        function_response = {"result": result}
+
+                if name in write_tools:
+                    if result.get("ok"):
+                        data = result.get("data") or {}
+                        if name == "create_task":
+                            text = (
+                                f"Done. Created {data.get('task_id', 'the task')} as a "
+                                f"{data.get('priority', args.get('priority', 'Medium'))}-priority "
+                                f"{data.get('department_name', data.get('department_id', args.get('department_id', '')))} task, "
+                                f"assigned to {data.get('assigned_employee_name', '')} "
+                                f"({data.get('assigned_employee_id', '')}), due {data.get('due_date', args.get('due_date', ''))}. "
+                                f"The simulated action was recorded in the Audit Log"
+                                + (f" as {data.get('audit_log_id')}." if data.get('audit_log_id') else ".")
+                            )
+                        elif name == "update_lead_status":
+                            text = (
+                                f"Done. {data.get('lead_id', args.get('lead_id', 'The lead'))} was updated "
+                                f"from {data.get('old_status', '')} to {data.get('new_status', args.get('new_status', ''))}. "
+                                f"The simulated action was recorded in the Audit Log."
+                            )
+                        elif name == "create_maintenance_ticket":
+                            text = (
+                                f"Done. Created maintenance ticket {data.get('ticket_id', '')} "
+                                f"with {data.get('priority', args.get('priority', 'Medium'))} priority. "
+                                f"The simulated action was recorded in the Audit Log."
+                            )
+                        else:
+                            text = (
+                                f"Done. Saved draft {data.get('communication_id', '')}. "
+                                f"No real message was sent, and the simulated action was recorded in the Audit Log."
+                            )
+                        self.history.append({"role": "user", "content": message})
+                        self.history.append({"role": "assistant", "content": text})
+                        return {
+                            "text": text,
+                            "provider": "gemini",
+                            "model": self.model,
+                            "tool": name,
+                            "data": data,
+                        }
+                    else:
+                        text = f"I could not complete the simulated action: {result.get('error', 'Unknown tool error')}"
+                        self.history.append({"role": "user", "content": message})
+                        self.history.append({"role": "assistant", "content": text})
+                        return {
+                            "text": text,
+                            "provider": "gemini",
+                            "model": self.model,
+                            "tool": name,
+                            "data": result,
                         }
 
                 tool_parts.append(
