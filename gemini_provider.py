@@ -162,11 +162,30 @@ def build_tool_functions(tools: CedarStoneTools) -> List[Callable[..., Dict[str,
         return _safe(tools.generate_management_briefing)
 
     def draft_communication(entity_type: str, entity_id: str, channel: str, subject: str, message: str) -> dict:
+        entity_map = {
+            "lead": "Lead",
+            "customer": "Customer",
+            "investor": "Investor",
+            "guest": "Guest",
+        }
+        channel_map = {
+            "email": "Email",
+            "e-mail": "Email",
+            "mail": "Email",
+            "whatsapp": "WhatsApp",
+            "whats app": "WhatsApp",
+            "sms": "SMS",
+            "text": "SMS",
+            "phone": "Phone",
+            "call": "Phone",
+        }
+        normalized_entity = entity_map.get((entity_type or "").strip().lower(), entity_type)
+        normalized_channel = channel_map.get((channel or "").strip().lower(), channel)
         return _safe(
             tools.draft_communication,
-            entity_type=entity_type,
+            entity_type=normalized_entity,
             entity_id=entity_id,
-            channel=channel,
+            channel=normalized_channel,
             subject=subject,
             message=message,
             commit=True,
@@ -309,9 +328,9 @@ def build_tool_declarations(types):
             "draft_communication",
             "Create a draft-only communication in the demo. This never sends a real message.",
             {
-                "entity_type": {"type": "string"},
+                "entity_type": {"type": "string", "enum": ["Lead", "Customer", "Investor", "Guest"]},
                 "entity_id": {"type": "string"},
-                "channel": {"type": "string"},
+                "channel": {"type": "string", "enum": ["Email", "WhatsApp", "SMS", "Phone"]},
                 "subject": {"type": "string"},
                 "message": {"type": "string"},
             },
