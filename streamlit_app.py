@@ -63,7 +63,25 @@ st.markdown(
     <style>
     .stApp { background: #F7F8F6; }
     [data-testid="stSidebar"] { background: #102A2A; }
-    [data-testid="stSidebar"] * { color: #F7FAF8; }
+    [data-testid="stSidebar"] label,
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3,
+[data-testid="stSidebar"] .stCaption {
+    color: #F7FAF8 !important;
+}
+
+[data-testid="stSidebar"] [data-baseweb="select"] > div {
+    background: #FFFFFF !important;
+}
+
+[data-testid="stSidebar"] [data-baseweb="select"] span,
+[data-testid="stSidebar"] [data-baseweb="select"] input,
+[data-testid="stSidebar"] [data-baseweb="select"] svg {
+    color: #102A2A !important;
+    fill: #102A2A !important;
+}
     [data-testid="stMetric"] {
         background: white;
         border: 1px solid #E3E8E5;
@@ -351,14 +369,17 @@ if "overview" in tab_by_key:
         briefing = tools.generate_management_briefing()
         m = briefing["metrics"]
         st.subheader("Management Command Centre")
-        cols = st.columns(6)
-        cols[0].metric("High-value stale leads", int(m["high_value_stale_leads"]))
-        cols[1].metric("Overdue receivables", money(m["overdue_receivables_ngn"]))
-        cols[2].metric("Weekend occupancy", f"{m['target_weekend_occupancy_pct']}%")
-        cols[3].metric("Critical >48h", int(m["critical_maintenance_over_48h"]))
-        cols[4].metric("Delayed milestones", int(m["delayed_or_late_milestones"]))
-        cols[5].metric("Investor updates due", int(m["investors_awaiting_updates"]))
 
+        row1 = st.columns(3)
+        row1[0].metric("High-value stale leads", int(m["high_value_stale_leads"]))
+        row1[1].metric("Overdue receivables", money(m["overdue_receivables_ngn"]))
+        row1[2].metric("Weekend occupancy", f"{m['target_weekend_occupancy_pct']}%")
+        
+        row2 = st.columns(3)
+        row2[0].metric("Critical maintenance >48h", int(m["critical_maintenance_over_48h"]))
+        row2[1].metric("Delayed / late milestones", int(m["delayed_or_late_milestones"]))
+        row2[2].metric("Investor updates due", int(m["investors_awaiting_updates"]))
+        
         st.markdown("### What needs attention")
         c1, c2 = st.columns(2)
         with c1:
