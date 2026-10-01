@@ -19,14 +19,10 @@ def _safe(fn: Callable[..., Any], **kwargs: Any) -> Dict[str, Any]:
 
 
 def build_tool_functions(tools: CedarStoneTools) -> List[Callable[..., Dict[str, Any]]]:
-    # Typed wrappers are exposed to Gemini as tool declarations. Tool execution is
-    # handled explicitly below instead of relying on SDK automatic function calling.
     def search_company_data(query: str, limit: int = 20) -> dict:
-        """Search CedarStone business records for a term, name or record ID."""
         return _safe(tools.search_company_data, query=query, limit=limit)
 
     def get_property_availability(property_id: str = "", unit_type: str = "", max_price_ngn: float = 0) -> dict:
-        """Find currently available property units using optional property, unit-type and maximum-price filters."""
         return _safe(
             tools.get_property_availability,
             property_id=property_id or None,
@@ -35,7 +31,6 @@ def build_tool_functions(tools: CedarStoneTools) -> List[Callable[..., Dict[str,
         )
 
     def get_leads(status: str = "", stale_days: int = 0, min_score: int = 0, min_budget_ngn: float = 0, assigned_employee_id: str = "") -> dict:
-        """Search and analyse CedarStone sales leads, including stale, high-score and high-value leads."""
         return _safe(
             tools.get_leads,
             status=status or None,
@@ -46,11 +41,9 @@ def build_tool_functions(tools: CedarStoneTools) -> List[Callable[..., Dict[str,
         )
 
     def update_lead_status(lead_id: str, new_status: str, note: str = "Updated by CedarStone AI demo") -> dict:
-        """Update a lead's status in the simulated CedarStone environment. Use only on explicit user instruction."""
         return _safe(tools.update_lead_status, lead_id=lead_id, new_status=new_status, note=note, commit=True)
 
     def create_task(department_id: str, assigned_employee_id: str, description: str, due_date: str, priority: str = "Medium") -> dict:
-        """Create a simulated internal CedarStone task. Use only on explicit user instruction."""
         return _safe(
             tools.create_task,
             department_id=department_id,
@@ -62,7 +55,6 @@ def build_tool_functions(tools: CedarStoneTools) -> List[Callable[..., Dict[str,
         )
 
     def create_maintenance_ticket(property_id: str, unit_id: str, issue_type: str, description: str, priority: str = "Medium", assigned_vendor_id: str = "") -> dict:
-        """Create a simulated facilities maintenance ticket. Use only on explicit user instruction."""
         return _safe(
             tools.create_maintenance_ticket,
             property_id=property_id,
@@ -75,27 +67,21 @@ def build_tool_functions(tools: CedarStoneTools) -> List[Callable[..., Dict[str,
         )
 
     def get_shortlet_bookings(start_date: str, end_date: str, property_id: str = "") -> dict:
-        """Calculate shortlet occupancy and booking value for a date range."""
         return _safe(tools.get_shortlet_bookings, start_date=start_date, end_date=end_date, property_id=property_id or None)
 
     def get_investor_summary(investor_id: str) -> dict:
-        """Return an investor profile and their connected CedarStone investments."""
         return _safe(tools.get_investor_summary, investor_id=investor_id)
 
     def get_outstanding_payments(min_amount_ngn: float = 0, overdue_only: bool = True) -> dict:
-        """Analyse outstanding or overdue property-payment plans."""
         return _safe(tools.get_outstanding_payments, min_amount_ngn=min_amount_ngn, overdue_only=overdue_only)
 
     def get_construction_status(project_id: str = "", delayed_only: bool = False) -> dict:
-        """Return construction project and milestone status, including delays."""
         return _safe(tools.get_construction_status, project_id=project_id or None, delayed_only=delayed_only)
 
     def generate_management_briefing() -> dict:
-        """Generate a cross-department CedarStone management briefing using current demo records."""
         return _safe(tools.generate_management_briefing)
 
     def draft_communication(entity_type: str, entity_id: str, channel: str, subject: str, message: str) -> dict:
-        """Create a draft-only communication in the demo. This never sends a real message."""
         return _safe(
             tools.draft_communication,
             entity_type=entity_type,
@@ -122,6 +108,139 @@ def build_tool_functions(tools: CedarStoneTools) -> List[Callable[..., Dict[str,
     ]
 
 
+def build_tool_declarations(types):
+    def fn(name: str, description: str, properties: dict, required: Optional[List[str]] = None):
+        schema = {
+            "type": "object",
+            "properties": properties,
+            "additionalProperties": False,
+        }
+        if required:
+            schema["required"] = required
+        return types.FunctionDeclaration(
+            name=name,
+            description=description,
+            parameters_json_schema=schema,
+        )
+
+    declarations = [
+        fn(
+            "search_company_data",
+            "Search CedarStone business records for a term, name or record ID.",
+            {
+                "query": {"type": "string"},
+                "limit": {"type": "integer", "minimum": 1, "maximum": 50},
+            },
+            ["query"],
+        ),
+        fn(
+            "get_property_availability",
+            "Find currently available property units using optional property, unit-type and maximum-price filters.",
+            {
+                "property_id": {"type": "string"},
+                "unit_type": {"type": "string"},
+                "max_price_ngn": {"type": "number"},
+            },
+        ),
+        fn(
+            "get_leads",
+            "Search and analyse CedarStone sales leads, including stale, high-score and high-value leads.",
+            {
+                "status": {"type": "string"},
+                "stale_days": {"type": "integer"},
+                "min_score": {"type": "integer"},
+                "min_budget_ngn": {"type": "number"},
+                "assigned_employee_id": {"type": "string"},
+            },
+        ),
+        fn(
+            "update_lead_status",
+            "Update a lead's status in the simulated CedarStone environment. Use only on explicit user instruction.",
+            {
+                "lead_id": {"type": "string"},
+                "new_status": {"type": "string"},
+                "note": {"type": "string"},
+            },
+            ["lead_id", "new_status"],
+        ),
+        fn(
+            "create_task",
+            "Create a simulated internal CedarStone task. Use only on explicit user instruction. The assigned employee must belong to the selected department.",
+            {
+                "department_id": {"type": "string"},
+                "assigned_employee_id": {"type": "string"},
+                "description": {"type": "string"},
+                "due_date": {"type": "string", "description": "ISO date YYYY-MM-DD"},
+                "priority": {"type": "string", "enum": ["Low", "Medium", "High"]},
+            },
+            ["department_id", "assigned_employee_id", "description", "due_date"],
+        ),
+        fn(
+            "create_maintenance_ticket",
+            "Create a simulated facilities maintenance ticket. Use only on explicit user instruction.",
+            {
+                "property_id": {"type": "string"},
+                "unit_id": {"type": "string"},
+                "issue_type": {"type": "string"},
+                "description": {"type": "string"},
+                "priority": {"type": "string", "enum": ["Low", "Medium", "High", "Critical"]},
+                "assigned_vendor_id": {"type": "string"},
+            },
+            ["property_id", "unit_id", "issue_type", "description"],
+        ),
+        fn(
+            "get_shortlet_bookings",
+            "Calculate shortlet occupancy and booking value for a date range.",
+            {
+                "start_date": {"type": "string"},
+                "end_date": {"type": "string"},
+                "property_id": {"type": "string"},
+            },
+            ["start_date", "end_date"],
+        ),
+        fn(
+            "get_investor_summary",
+            "Return an investor profile and their connected CedarStone investments.",
+            {"investor_id": {"type": "string"}},
+            ["investor_id"],
+        ),
+        fn(
+            "get_outstanding_payments",
+            "Analyse outstanding or overdue property-payment plans.",
+            {
+                "min_amount_ngn": {"type": "number"},
+                "overdue_only": {"type": "boolean"},
+            },
+        ),
+        fn(
+            "get_construction_status",
+            "Return construction project and milestone status, including delays.",
+            {
+                "project_id": {"type": "string"},
+                "delayed_only": {"type": "boolean"},
+            },
+        ),
+        fn(
+            "generate_management_briefing",
+            "Generate a cross-department CedarStone management briefing using current demo records.",
+            {},
+        ),
+        fn(
+            "draft_communication",
+            "Create a draft-only communication in the demo. This never sends a real message.",
+            {
+                "entity_type": {"type": "string"},
+                "entity_id": {"type": "string"},
+                "channel": {"type": "string"},
+                "subject": {"type": "string"},
+                "message": {"type": "string"},
+            },
+            ["entity_type", "entity_id", "channel", "subject", "message"],
+        ),
+    ]
+    return types.Tool(function_declarations=declarations)
+
+
 class GeminiProvider:
     def __init__(self, tools: CedarStoneTools, api_key: Optional[str] = None, model: str = DEFAULT_MODEL):
         try:
@@ -139,21 +258,16 @@ class GeminiProvider:
         self.model = model
         self.functions = build_tool_functions(tools)
         self.function_map = {fn.__name__: fn for fn in self.functions}
+        self.tool = build_tool_declarations(types)
         self.history: List[Dict[str, str]] = []
 
     def _config(self):
         return self._types.GenerateContentConfig(
             system_instruction=SYSTEM_PROMPT,
-            tools=self.functions,
-            automatic_function_calling=self._types.AutomaticFunctionCallingConfig(
-                disable=True
-            ),
+            tools=[self.tool],
         )
 
     def ask(self, message: str) -> Dict[str, Any]:
-        # Keep a compact conversational trace while executing Gemini tool calls
-        # explicitly. This avoids SDK automatic-function-calling compatibility
-        # issues while preserving the approved CedarStone tool boundary.
         history_text = ""
         if self.history:
             history_text = "\nRecent conversation:\n" + "\n".join(
@@ -174,7 +288,7 @@ class GeminiProvider:
             config=self._config(),
         )
 
-        for _ in range(6):
+        for _ in range(8):
             calls = list(response.function_calls or [])
             if not calls:
                 break
