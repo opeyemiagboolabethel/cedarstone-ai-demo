@@ -317,12 +317,12 @@ class GeminiProvider:
                     self._types.Part.from_function_response(
                         name=name,
                         response=function_response,
-                        id=getattr(call, "id", None),
                     )
                 )
 
-            # Gemini 3.x expects function responses to be returned as user content.
-            contents.append(self._types.Content(role="user", parts=tool_parts))
+            # Return function results to Gemini as user content. The installed
+            # google-genai SDK does not accept an id argument here.
+            contents.append(self._types.UserContent(parts=tool_parts))
             response = self.client.models.generate_content(
                 model=self.model,
                 contents=contents,
