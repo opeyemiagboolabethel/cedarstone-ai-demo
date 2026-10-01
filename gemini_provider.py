@@ -317,10 +317,12 @@ class GeminiProvider:
                     self._types.Part.from_function_response(
                         name=name,
                         response=function_response,
+                        id=getattr(call, "id", None),
                     )
                 )
 
-            contents.append(self._types.Content(role="tool", parts=tool_parts))
+            # Gemini 3.x expects function responses to be returned as user content.
+            contents.append(self._types.Content(role="user", parts=tool_parts))
             response = self.client.models.generate_content(
                 model=self.model,
                 contents=contents,
