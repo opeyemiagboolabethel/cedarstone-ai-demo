@@ -19,8 +19,8 @@ def _safe(fn: Callable[..., Any], **kwargs: Any) -> Dict[str, Any]:
 
 
 def build_tool_functions(tools: CedarStoneTools) -> List[Callable[..., Dict[str, Any]]]:
-    # Simple, typed wrappers are intentionally used because the Google GenAI SDK
-    # automatically converts Python callables into function declarations.
+    # Typed wrappers are exposed to Gemini as tool declarations. Tool execution is
+    # handled explicitly below instead of relying on SDK automatic function calling.
     def search_company_data(query: str, limit: int = 20) -> dict:
         """Search CedarStone business records for a term, name or record ID."""
         return _safe(tools.search_company_data, query=query, limit=limit)
@@ -51,11 +51,28 @@ def build_tool_functions(tools: CedarStoneTools) -> List[Callable[..., Dict[str,
 
     def create_task(department_id: str, assigned_employee_id: str, description: str, due_date: str, priority: str = "Medium") -> dict:
         """Create a simulated internal CedarStone task. Use only on explicit user instruction."""
-        return _safe(tools.create_task, department_id=department_id, assigned_employee_id=assigned_employee_id, description=description, due_date=due_date, priority=priority, commit=True)
+        return _safe(
+            tools.create_task,
+            department_id=department_id,
+            assigned_employee_id=assigned_employee_id,
+            description=description,
+            due_date=due_date,
+            priority=priority,
+            commit=True,
+        )
 
     def create_maintenance_ticket(property_id: str, unit_id: str, issue_type: str, description: str, priority: str = "Medium", assigned_vendor_id: str = "") -> dict:
         """Create a simulated facilities maintenance ticket. Use only on explicit user instruction."""
-        return _safe(tools.create_maintenance_ticket, property_id=property_id, unit_id=unit_id, issue_type=issue_type, description=description, priority=priority, assigned_vendor_id=assigned_vendor_id or None, commit=True)
+        return _safe(
+            tools.create_maintenance_ticket,
+            property_id=property_id,
+            unit_id=unit_id,
+            issue_type=issue_type,
+            description=description,
+            priority=priority,
+            assigned_vendor_id=assigned_vendor_id or None,
+            commit=True,
+        )
 
     def get_shortlet_bookings(start_date: str, end_date: str, property_id: str = "") -> dict:
         """Calculate shortlet occupancy and booking value for a date range."""
@@ -79,7 +96,15 @@ def build_tool_functions(tools: CedarStoneTools) -> List[Callable[..., Dict[str,
 
     def draft_communication(entity_type: str, entity_id: str, channel: str, subject: str, message: str) -> dict:
         """Create a draft-only communication in the demo. This never sends a real message."""
-        return _safe(tools.draft_communication, entity_type=entity_type, entity_id=entity_id, channel=channel, subject=subject, message=message, commit=True)
+        return _safe(
+            tools.draft_communication,
+            entity_type=entity_type,
+            entity_id=entity_id,
+            channel=channel,
+            subject=subject,
+            message=message,
+            commit=True,
+        )
 
     return [
         search_company_data,
@@ -113,26 +138,85 @@ class GeminiProvider:
         self.client = genai.Client(api_key=key)
         self.model = model
         self.functions = build_tool_functions(tools)
+        self.function_map = {fn.__name__: fn for fn in self.functions}
         self.history: List[Dict[str, str]] = []
 
+    def _config(self):
+        return self._types.GenerateContentConfig(
+            system_instruction=SYSTEM_PROMPT,
+            tools=self.functions,
+            automatic_function_calling=self._types.AutomaticFunctionCallingConfig(
+                disable=True
+            ),
+        )
+
     def ask(self, message: str) -> Dict[str, Any]:
-        # Keep a compact conversational trace in the prompt. Tool execution itself
-        # is handled automatically by google-genai.
+        # Keep a compact conversational trace while executing Gemini tool calls
+        # explicitly. This avoids SDK automatic-function-calling compatibility
+        # issues while preserving the approved CedarStone tool boundary.
         history_text = ""
         if self.history:
             history_text = "\nRecent conversation:\n" + "\n".join(
                 f"{h['role'].upper()}: {h['content']}" for h in self.history[-8:]
             ) + "\n"
+
         prompt = history_text + "\nCURRENT USER REQUEST:\n" + message
+        contents = [
+            self._types.Content(
+                role="user",
+                parts=[self._types.Part.from_text(text=prompt)],
+            )
+        ]
+
         response = self.client.models.generate_content(
             model=self.model,
-            contents=prompt,
-            config=self._types.GenerateContentConfig(
-                system_instruction=SYSTEM_PROMPT,
-                tools=self.functions,
-            ),
+            contents=contents,
+            config=self._config(),
         )
+
+        for _ in range(6):
+            calls = list(response.function_calls or [])
+            if not calls:
+                break
+
+            if response.candidates and response.candidates[0].content is not None:
+                contents.append(response.candidates[0].content)
+
+            tool_parts = []
+            for call in calls:
+                name = call.name or ""
+                args = dict(call.args or {})
+                fn = self.function_map.get(name)
+
+                if fn is None:
+                    function_response = {"error": f"Unknown CedarStone tool: {name}"}
+                else:
+                    try:
+                        result = fn(**args)
+                        function_response = {"result": result}
+                    except Exception as exc:
+                        function_response = {
+                            "error": f"Tool execution failed: {type(exc).__name__}: {exc}"
+                        }
+
+                tool_parts.append(
+                    self._types.Part.from_function_response(
+                        name=name,
+                        response=function_response,
+                    )
+                )
+
+            contents.append(self._types.Content(role="tool", parts=tool_parts))
+            response = self.client.models.generate_content(
+                model=self.model,
+                contents=contents,
+                config=self._config(),
+            )
+
         text = (response.text or "").strip()
+        if not text:
+            text = "The request was processed, but Gemini returned no final text response."
+
         self.history.append({"role": "user", "content": message})
         self.history.append({"role": "assistant", "content": text})
         return {"text": text, "provider": "gemini", "model": self.model}
