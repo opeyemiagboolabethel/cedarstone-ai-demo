@@ -6,7 +6,7 @@ from typing import Any, Callable, Dict, List, Optional
 from prompts import SYSTEM_PROMPT
 from cedarstone_tools import CedarStoneTools
 
-DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
 
 
 def _safe(fn: Callable[..., Any], **kwargs: Any) -> Dict[str, Any]:
