@@ -81,3 +81,10 @@ See `PHASE9_QA_REPORT.md` for the full QA summary.
 
 ## Phase 10 deployment
 This build is packaged for Streamlit Community Cloud. See `DEPLOYMENT_CHECKLIST.md` for the exact deployment flow. Offline Demo mode requires no API key. Live Gemini mode uses Streamlit Secrets and `gemini-3.8-flash`.
+
+
+## October 2026 presentation refinement
+
+The interface follows ONE Light Analytics navy, gold and paper branding. A three-minute walkthrough introduces the evidence, action lab and audit trail. The transcript clears when the selected demo role, employee or provider changes. Scenario mode uses deterministic database tools; live AI mode uses the configured provider. Role switching is a demonstration of tool permissions, not production authentication.
+
+The 48-hour maintenance scenario now checks ticket age against the fixed business clock, including after a new critical ticket is created. Run `python test_refinement.py` alongside the existing Phase 9 suite to verify that boundary and the application transcript behaviour.

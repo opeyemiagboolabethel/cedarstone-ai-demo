@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import re
+from datetime import datetime, timedelta
 from typing import Any, Dict
 
-from cedarstone_tools import CedarStoneTools
+from cedarstone_tools import CedarStoneTools, AS_OF
 
 
 def money(x: float) -> str:
@@ -48,6 +49,8 @@ class OfflineDemoAgent:
         if "maintenance" in q and any(k in q for k in ["critical", "48", "unresolved", "open"]):
             d = self.tools.search_company_data("Open", domains=["maintenance"], limit=50)
             rows = [r for r in d.get("results", {}).get("maintenance", []) if r.get("priority") == "Critical" and r.get("status") not in ("Resolved", "Closed")]
+            if "48" in q:
+                rows = [r for r in rows if AS_OF - datetime.fromisoformat(r["reported_date"]) > timedelta(hours=48)]
             ids = ", ".join(r["ticket_id"] for r in rows)
             text = f"There are {len(rows)} unresolved critical maintenance cases: {ids}."
             return {"text": text, "provider": "offline-demo", "tool": "search_company_data", "data": rows}
@@ -92,3 +95,4 @@ class OfflineDemoAgent:
         else:
             text = "I could not find a matching CedarStone record. Try a property name, record ID, investor ID, lead question, shortlet question, maintenance issue, construction question, or management briefing."
         return {"text": text, "provider": "offline-demo", "tool": "search_company_data", "data": d}
+

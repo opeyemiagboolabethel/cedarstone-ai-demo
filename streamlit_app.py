@@ -61,8 +61,13 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    .stApp { background: #F7F8F6; }
-    [data-testid="stSidebar"] { background: #102A2A; }
+    .stApp { background: #F7F5EF; color: #071522; }
+    .stButton button, .stFormSubmitButton button { min-height: 44px; border-radius: 8px; border-color: #B38842; }
+    .stButton button p, .stFormSubmitButton button p { color: #071522; }
+    [data-testid="stSidebar"] button p { color: #071522 !important; }
+    [data-testid="stMetricValue"] { color: #071522; }
+    button[role="tab"][aria-selected="true"] { color: #825918; border-bottom-color: #B38842; }
+    [data-testid="stSidebar"] { background: #071522; }
     [data-testid="stSidebar"] label,
 [data-testid="stSidebar"] p,
 [data-testid="stSidebar"] h1,
@@ -79,8 +84,8 @@ st.markdown(
 [data-testid="stSidebar"] [data-baseweb="select"] span,
 [data-testid="stSidebar"] [data-baseweb="select"] input,
 [data-testid="stSidebar"] [data-baseweb="select"] svg {
-    color: #102A2A !important;
-    fill: #102A2A !important;
+    color: #071522 !important;
+    fill: #071522 !important;
 }
     [data-testid="stMetric"] {
         background: white;
@@ -90,19 +95,19 @@ st.markdown(
         box-shadow: 0 2px 12px rgba(16,42,42,0.04);
     }
     .hero {
-        background: linear-gradient(120deg, #102A2A 0%, #174D49 68%, #1D625C 100%);
+        background: linear-gradient(120deg, #071522 0%, #163044 68%, #24475D 100%);
         color: white;
         border-radius: 20px;
         padding: 28px 30px;
         margin-bottom: 18px;
         box-shadow: 0 12px 34px rgba(16,42,42,0.16);
     }
-    .hero h1 { margin: 0; font-size: 2.15rem; letter-spacing: -0.04em; }
-    .hero p { margin: 8px 0 0 0; color: #D9ECE8; font-size: 1rem; }
-    .eyebrow { font-size: .78rem; text-transform: uppercase; letter-spacing: .16em; color: #A7D6CE; font-weight: 700; }
+    .hero h1 { color: #FFFFFF !important; margin: 0; font-size: 2.4rem; letter-spacing: -0.04em; }
+    .hero p { margin: 8px 0 0 0; color: #E6E9EC; font-size: 1rem; }
+    .eyebrow { font-size: .78rem; text-transform: uppercase; letter-spacing: .16em; color: #E6BD77; font-weight: 700; }
     .status-chip {
         display:inline-block; padding:5px 10px; border-radius:999px;
-        background:#E4F5EF; color:#0C655B; font-weight:700; font-size:.78rem;
+        background:#F4E6CF; color:#684714; font-weight:700; font-size:.78rem;
         margin-right:6px;
     }
     .warning-chip {
@@ -254,11 +259,11 @@ with st.sidebar:
     )
     provider = "offline" if provider_label == "Offline Demo" else "gemini"
     if provider == "gemini" and not api_key:
-        st.warning("Live Gemini is not configured. Add GEMINI_API_KEY in Streamlit secrets or your environment.")
+        st.warning("Live AI mode is unavailable here. Choose Offline Demo to explore the database-backed scenarios.")
     elif provider == "gemini":
-        st.success("Live Gemini configured")
+        st.success("Live AI mode available")
     else:
-        st.info("Zero-cost offline demo mode")
+        st.info("Scenario mode: database-backed examples, without a language model.")
 
     st.divider()
     st.caption("Demo controls")
@@ -266,13 +271,19 @@ with st.sidebar:
         reset_session_db()
     st.caption("Every browser session uses a private copy of the fictional database.")
 
+context_key = (role, employee_id, provider)
+if st.session_state.get("visible_context") != context_key:
+    st.session_state.pop("messages", None)
+    st.session_state.pop("pending_prompt", None)
+    st.session_state.visible_context = context_key
+
 # ---------------- Hero ----------------
 st.markdown(
     f"""
     <div class="hero">
-      <div class="eyebrow">ONE Light Analytics · Demonstration Project 06</div>
-      <h1>CedarStone AI Operations Agent</h1>
-      <p>One intelligent operating layer across sales, shortlets, investors, facilities, construction, finance and management.</p>
+      <div class="eyebrow">ONE Light Analytics · Sector Demo 01 / Real Estate</div>
+      <h1>CedarStone AI</h1>
+      <p>See what needs attention. Inspect the records. Coordinate the next action across your real-estate operation.</p>
       <div style="margin-top:16px">
         <span class="status-chip">Fictional company data</span>
         <span class="status-chip">Private demo sandbox</span>
@@ -282,6 +293,10 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+with st.expander("Start here · a three-minute operating walkthrough"):
+    st.markdown("**1. See the priorities.** Open Executive Overview, then return to AI Agent and choose CEO Morning Briefing.\n\n**2. Inspect the evidence.** Try Sales Rescue or Construction Delay and expand the returned business records.\n\n**3. Coordinate a next step.** Use Action Lab to create a simulated task, then inspect Audit Log. Nothing leaves this fictional sandbox.")
+    st.caption("The business clock is fixed at 30 September 2026. Weekend occupancy refers to 2–4 October 2026. Role switching demonstrates tool permissions; it is not production authentication.")
 
 # Global metrics are shown only where the selected role has business justification.
 role_sections = {
@@ -628,3 +643,4 @@ if "audit" in tab_by_key:
 
 st.markdown("---")
 st.caption("CedarStone Properties & Living Ltd. is fictional. This application is a ONE Light Analytics demonstration of agentic business operations, not a production client system.")
+
