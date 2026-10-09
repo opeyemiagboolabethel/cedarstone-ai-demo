@@ -51,6 +51,8 @@ class LogisticsTests(unittest.TestCase):
   other=copy.deepcopy(FIXTURE);p=self.tools.propose_dispatch_assignment('RLY-0038','VEH-01');self.tools.commit_assignment(p,True);self.assertEqual(other['shipments'][37]['status'],'Awaiting dispatch')
  def test_scenario_evidence(self):
   for q in ['What needs attention?','Show overdue','Show at risk','Missing POD','Dispatch capacity','Draft update for RLY-0025','Track RLY-0025']:self.assertTrue(scenario_answer(self.tools,q)['trace'])
+ def test_audit_redacts_after_role_switch(self):
+  p=self.tools.propose_dispatch_assignment('RLY-0038','VEH-01');self.tools.commit_assignment(p,True);audit=LogisticsTools(self.state,'customer_service').get_audit_log();self.assertNotIn('declared_value_ngn',audit[0]['before']);self.assertNotIn('delivery_fee_ngn',audit[0]['after'])
  def test_exact_deadline_boundary(self):
   s=self.state['shipments'][24];s['promised_at']=self.state['as_of'];s['recorded_eta']=self.state['as_of'];self.assertNotIn('Overdue',self.tools.flags(s));self.assertNotIn('At risk',self.tools.flags(s))
  def test_empty_delivered_denominator(self):

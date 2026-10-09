@@ -44,7 +44,7 @@ def render():
    for col,(label,value) in zip(row,values):col.metric(label,value)
   st.caption(f"{m['total_shipments']} records reconcile to {m['active']} active + {m['delivered']} delivered + {m['cancelled']} cancelled. On-time rate = {m['on_time_delivered']} / {m['delivered']} delivered shipments. ETA risk is a recorded schedule comparison, not a predictive model.")
   a,b=st.columns(2)
-  a.info('Delivery recovery: inspect the eight overdue records, confirm the handling issue and choose an owner. The source note is not a independently verified root cause.')
+  a.info('Delivery recovery: inspect the eight overdue records, confirm the handling issue and choose an owner. The source note is not an independently verified root cause.')
   b.info('Service closure: request the four missing proof-of-delivery records before treating delivery documentation as complete.')
   if role in {'manager','dispatch'}:st.dataframe(pd.DataFrame(tools.get_dispatch_capacity()['vehicles']),hide_index=True,width='stretch')
  with tabs[1]:
@@ -109,7 +109,7 @@ def render():
    draft=tools.draft_customer_update(target);st.text_area('Draft only — not sent',draft['draft'],height=130);st.caption('No email, WhatsApp or SMS delivery integration is enabled.')
  with tabs[4]:
   st.subheader('Session audit trail')
-  if tools.state['actions']:st.json(tools.state['actions'])
+  if tools.state['actions']:st.json(tools.get_audit_log())
   else:st.info('No simulated allocations have been committed in this session.')
-  st.download_button('Download session audit',json.dumps(tools.state['actions'],indent=2),'relaypoint-audit.json','application/json')
+  st.download_button('Download session audit',json.dumps(tools.get_audit_log(),indent=2),'relaypoint-audit.json','application/json')
  st.caption('RelayPoint Logistics is fictional. These are demonstration operating records, not client results, live GPS or a production dispatch system.')

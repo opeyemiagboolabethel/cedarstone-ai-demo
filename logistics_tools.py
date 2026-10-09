@@ -68,6 +68,11 @@ class LogisticsTools:
   s=self._record(current['shipment_id']);before=self._public(s);s['vehicle_id']=current['vehicle_id'];s['status']='Assigned';self.state['revision']+=1
   action=dict(action_id=f"ACT-{len(self.state['actions'])+1:04d}",action='Simulated vehicle assignment',actor_role=self.role,as_of=self.state['as_of'],revision=self.state['revision'],before=before,after=self._public(s),external_dispatch=False)
   self.state['actions'].append(action);return copy.deepcopy(action)
+ def get_audit_log(self):
+  rows=copy.deepcopy(self.state['actions'])
+  for row in rows:
+   row['before']=self._public(row['before']);row['after']=self._public(row['after'])
+  return rows
  def draft_customer_update(self,shipment_id):
   """Prepare a factual draft; do not send or promise a new arrival time."""
   s=self._record(shipment_id);flags=self.flags(s)
@@ -82,7 +87,7 @@ def scenario_answer(tools,message):
  q=message.lower();match=re.search(r'rly-\d{4}',q)
  if match and any(t in q for t in ['draft','update','message']):name='draft_customer_update';data=tools.draft_customer_update(match.group());text=data['draft']
  elif match:name='track_shipment';data=tools.track_shipment(match.group());s=data['record'];text=f"{s['shipment_id']} is {s['status']} on {s['origin']} → {s['destination']}. Flags: {', '.join(data['flags']) or 'None'}. {s['exception_note']}"
- elif 'capacity' in q or 'vehicle' in q:name='get_dispatch_capacity';data=tools.get_dispatch_capacity();text='Available dispatch options: '+', '.join(f"{v['vehicle_id']} · {v['remaining_kg']} kg remaining · {v['status']}" for v in data['vehicles'])+'. Check lane compatibility before preparing an allocation.'
+ elif 'capacity' in q or 'vehicle' in q:name='get_dispatch_capacity';data=tools.get_dispatch_capacity();text='Fleet capacity snapshot: '+', '.join(f"{v['vehicle_id']} · {v['remaining_kg']} kg remaining · {v['status']}" for v in data['vehicles'])+'. Check lane compatibility before preparing an allocation.'
  elif any(w in q for w in ['overdue','at risk','pod','exception','dispatch queue']):
   kind='Missing POD' if 'pod' in q else 'At risk' if 'at risk' in q else 'Overdue' if 'overdue' in q else 'Awaiting dispatch' if 'dispatch queue' in q else 'All';name='list_delivery_exceptions';data=tools.list_delivery_exceptions(kind);text=f"{data['count']} shipments match {kind}: "+', '.join(s['shipment_id'] for s in data['records'])+'. Review the recorded cause and assign the next handling step.'
  elif any(w in q for w in ['brief','attention','priority','priorities','overview']):
