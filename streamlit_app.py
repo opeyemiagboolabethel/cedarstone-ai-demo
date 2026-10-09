@@ -51,6 +51,11 @@ WRITE_CAPABILITIES = {
     "shortlet": {"create_task", "create_maintenance", "draft_communication"},
 }
 
+if st.query_params.get('industry') == 'logistics':
+    from logistics_app import render
+    render()
+    st.stop()
+
 st.set_page_config(
     page_title="CedarStone AI | Operations Agent",
     page_icon="🏢",
