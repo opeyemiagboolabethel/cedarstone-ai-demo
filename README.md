@@ -91,6 +91,16 @@ The 48-hour maintenance scenario now checks ticket age against the fixed busines
 
 ## RelayPoint AI logistics sector
 
-The shared entry point serves a separate RelayPoint logistics experience when opened with `?industry=logistics`. CedarStone remains the default real-estate experience. RelayPoint uses its own 48-record fictional fixture, role-scoped tools, session state and audit trail. Live AI uses the existing configured provider; Scenario mode requires no key. No allocation-commit function is exposed to the model. Human-confirmed simulated allocations are performed through Action Lab.
+Deploy RelayPoint as a separate Streamlit app using `relaypoint_app.py` as its main file. Deploy CedarStone using `streamlit_app.py`. Each app has its own public subdomain and Streamlit Secrets configuration. The legacy `?industry=logistics` route remains temporarily compatible until the dedicated host is verified and website links are switched. RelayPoint uses its own 48-record fictional fixture, role-scoped tools, session state and audit trail. Live AI uses the provider configured in the RelayPoint deployment; Scenario mode requires no key. No allocation-commit function is exposed to the model. Human-confirmed simulated allocations are performed through Action Lab.
 
 Run `python -m unittest test_logistics -q`, `python test_logistics_agent.py` and `python test_logistics_app.py`, then the existing CedarStone regression suites. The agent SDK test mocks the provider; live-provider behaviour is checked on deployment. No customer messages are sent and no real vehicle dispatch occurs.
+
+## Dedicated RelayPoint deployment
+
+- Repository: `opeyemiagboolabethel/cedarstone-ai-demo` (source repository only; app deployments are independent).
+- Branch: `main`.
+- Main file: `relaypoint_app.py`.
+- Requested app subdomain: `relaypoint-ai-demo` (availability must be confirmed in Streamlit).
+- Add `GEMINI_API_KEY` or `GOOGLE_API_KEY` in the new app's Streamlit Secrets for Live AI. Do not commit keys. Without a key, Scenario mode works.
+- Verify the actual deployed URL and a Live AI response before updating website CTAs.
+- The dedicated app has no CedarStone sidebar shortcut.

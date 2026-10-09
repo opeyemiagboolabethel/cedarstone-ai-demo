@@ -1,6 +1,6 @@
 from pathlib import Path
 from streamlit.testing.v1 import AppTest
-at=AppTest.from_file(str(Path(__file__).parent/'streamlit_app.py'));at.query_params['industry']='logistics';at.run(timeout=30)
+at=AppTest.from_file(str(Path(__file__).parent/'relaypoint_app.py'));at.run(timeout=30)
 assert not at.exception,at.exception
 next(b for b in at.button if b.label=='Operating briefing').click().run(timeout=30)
 assert not at.exception,at.exception
@@ -20,4 +20,4 @@ next(s for s in at.selectbox if s.label=='Demo role').select('customer_service')
 assert not at.exception,at.exception
 assert not at.session_state['relay_messages']
 assert not any(b.label=='Prepare allocation proposal' for b in at.button)
-print('PASS: logistics route loads, scenario answers, confirmation guard, allocation, updated state and role isolation')
+print('PASS: standalone logistics app loads, scenario answers, confirmation guard, allocation, updated state and role isolation')

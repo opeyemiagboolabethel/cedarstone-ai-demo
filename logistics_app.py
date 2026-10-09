@@ -1,4 +1,4 @@
-"""RelayPoint logistics demo served by the existing multi-sector demo host."""
+"""RelayPoint logistics demonstration with a dedicated deployment entry point."""
 import copy,json,os
 from pathlib import Path
 import pandas as pd
@@ -16,7 +16,6 @@ def render():
  with st.sidebar:
   st.subheader('RelayPoint AI');st.caption('Logistics operating demonstration')
   st.link_button('ONE Light Analytics case page','https://onelightanalytics.com/pages/case-logistics-ai')
-  st.link_button('CedarStone real-estate demo','https://cedarstone-ai-demo.streamlit.app/')
   role=st.selectbox('Demo role',list(ROLES),format_func=ROLES.get,key='relay_role')
   key=os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY') or ''
   if not key:
