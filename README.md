@@ -88,19 +88,3 @@ This build is packaged for Streamlit Community Cloud. See `DEPLOYMENT_CHECKLIST.
 The interface follows ONE Light Analytics navy, gold and paper branding. A three-minute walkthrough introduces the evidence, action lab and audit trail. The transcript clears when the selected demo role, employee or provider changes. Scenario mode uses deterministic database tools; live AI mode uses the configured provider. Role switching is a demonstration of tool permissions, not production authentication.
 
 The 48-hour maintenance scenario now checks ticket age against the fixed business clock, including after a new critical ticket is created. Run `python test_refinement.py` alongside the existing Phase 9 suite to verify that boundary and the application transcript behaviour.
-
-## RelayPoint AI logistics sector
-
-Deploy RelayPoint as a separate Streamlit app using `relaypoint_app.py` as its main file. Deploy CedarStone using `streamlit_app.py`. Each app has its own public subdomain and Streamlit Secrets configuration. The legacy `?industry=logistics` route remains temporarily compatible until the dedicated host is verified and website links are switched. RelayPoint uses its own 48-record fictional fixture, role-scoped tools, session state and audit trail. Live AI uses the provider configured in the RelayPoint deployment; Scenario mode requires no key. No allocation-commit function is exposed to the model. Human-confirmed simulated allocations are performed through Action Lab.
-
-Run `python -m unittest test_logistics -q`, `python test_logistics_agent.py` and `python test_logistics_app.py`, then the existing CedarStone regression suites. The agent SDK test mocks the provider; live-provider behaviour is checked on deployment. No customer messages are sent and no real vehicle dispatch occurs.
-
-## Dedicated RelayPoint deployment
-
-- Repository: `opeyemiagboolabethel/cedarstone-ai-demo` (source repository only; app deployments are independent).
-- Branch: `main`.
-- Main file: `relaypoint_app.py`.
-- Requested app subdomain: `relaypoint-ai-demo` (availability must be confirmed in Streamlit).
-- Add `GEMINI_API_KEY` or `GOOGLE_API_KEY` in the new app's Streamlit Secrets for Live AI. Do not commit keys. Without a key, Scenario mode works.
-- Verify the actual deployed URL and a Live AI response before updating website CTAs.
-- The dedicated app has no CedarStone sidebar shortcut.
